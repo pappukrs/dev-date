@@ -37,13 +37,13 @@
     - Coding challenge generator/validator.
     - Compatibility scoring based on "Clean Architecture" vs "Fast & Dirty" etc.
 
-## Phase 3: Community & Gamification
+## Phase 3: Community & Gamification [x]
 **Goal:** Reputation, project marketplace, and realtime collaboration.
-- **Service: Reputation**
+- [x] **Service: Reputation**
     - Gamified levels (Junior → Architect).
-- **Service: Project Marketplace**
+- [x] **Service: Project Marketplace**
     - Posting collaboration needs.
-- **Service: Media**
+- [x] **Service: Media**
     - WebRTC for pair programming and video calls.
 
 ## Phase 4: Scaling & Polish

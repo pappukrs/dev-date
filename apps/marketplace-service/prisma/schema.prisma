@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/marketplace-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ProjectPost {
+  id          String        @id @default(uuid())
+  authorId    String
+  title       String
+  description String
+  tags        String[]
+  status      String        @default("OPEN") // OPEN, CLOSED
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  applications Application[]
+
+  @@index([authorId])
+  @@index([status])
+  @@map("project_posts")
+}
+
+model Application {
+  id          String      @id @default(uuid())
+  postId      String
+  applicantId String
+  message     String
+  status      String      @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt   DateTime    @default(now())
+  post        ProjectPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, applicantId])
+  @@map("applications")
+}

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Check, X, Heart } from "lucide-react";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface Profile {
     githubId: string;
@@ -25,7 +28,7 @@ export default function MatchSwipe({ currentUser }: { currentUser: any }) {
 
     const fetchPotentialMatches = async () => {
         try {
-            const res = await fetch(`http://localhost:3000/matches/potential?userId=${currentUser.id || currentUser.githubId}`);
+            const res = await fetch(`${API_BASE}/matches/potential?userId=${currentUser.id || currentUser.githubId}`);
             if (res.ok) {
                 const data = await res.json();
                 setProfiles(data);
@@ -46,7 +49,7 @@ export default function MatchSwipe({ currentUser }: { currentUser: any }) {
         setCurrentIndex(prev => prev + 1);
 
         try {
-            const res = await fetch(`http://localhost:3000/matches/swipe`, {
+            const res = await fetch(`${API_BASE}/matches/swipe`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -107,8 +110,8 @@ export default function MatchSwipe({ currentUser }: { currentUser: any }) {
             )}
 
             {/* Card */}
-            <div className="bg-gray-900 rounded-2xl overflow-hidden border border-gray-700 shadow-2xl relative group">
-                <div className="relative h-96 w-full">
+            <div className="bg-gray-900 rounded-2xl overflow-hidden border border-gray-700 shadow-2xl relative group h-[600px] flex flex-col">
+                <div className="relative h-96 w-full flex-grow">
                     <img
                         src={profile.avatarUrl}
                         alt={profile.username}
@@ -139,25 +142,25 @@ export default function MatchSwipe({ currentUser }: { currentUser: any }) {
                         </div>
 
                         <div className="flex items-center gap-2 text-green-400 font-mono text-sm bg-green-900/20 px-3 py-1 rounded-full w-fit">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                            <Check className="w-4 h-4" />
                             Dev Score: {profile.devScore}
                         </div>
                     </div>
                 </div>
 
                 {/* Actions */}
-                <div className="p-6 grid grid-cols-2 gap-4">
+                <div className="p-6 grid grid-cols-2 gap-4 bg-gray-900 border-t border-gray-800">
                     <button
                         onClick={() => handleSwipe('PASS')}
-                        className="flex items-center justify-center py-4 rounded-xl border-2 border-red-500/50 text-red-500 hover:bg-red-500/10 transition active:scale-95"
+                        className="flex items-center justify-center py-4 rounded-xl border-2 border-red-500/50 text-red-500 hover:bg-red-500/10 transition active:scale-95 group"
                     >
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        <X className="w-8 h-8 group-hover:scale-110 transition" />
                     </button>
                     <button
                         onClick={() => handleSwipe('LIKE')}
-                        className="flex items-center justify-center py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/20 hover:from-green-400 hover:to-emerald-500 transition active:scale-95"
+                        className="flex items-center justify-center py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/20 hover:from-green-400 hover:to-emerald-500 transition active:scale-95 group"
                     >
-                        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>
+                        <Heart className="w-8 h-8 group-hover:scale-110 transition fill-current" />
                     </button>
                 </div>
             </div>

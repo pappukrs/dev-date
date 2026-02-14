@@ -1,26 +1,24 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id              String   @id
-  githubId        String   @unique
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  githubId        String   @unique @map("github_id")
   username        String
-  displayName     String
-  avatarUrl       String
+  displayName     String?  @map("display_name")
+  avatarUrl       String?  @map("avatar_url")
   bio             String?
-  techStack       String[]
-  devScore        Int      @default(0)
-  experienceLevel String // 'Junior' | 'Mid' | 'Senior' | 'Lead' NOT SUPPORTED AS ENUM IN SQLITE IF SWITCHED, BUT OK FOR POSTGRES
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  techStack       String[] @map("tech_stack")
+  devScore        Int      @default(0) @map("dev_score")
+  experienceLevel String?  @map("experience_level")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("users")
 }

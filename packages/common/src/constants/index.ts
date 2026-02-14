@@ -6,5 +6,8 @@ export enum ServicePorts {
     CHAT = 3003,
     MATCHING = 3004,
     COMPATIBILITY = 3005,
+    REPUTATION = 3006,
+    MARKETPLACE = 3007,
+    MEDIA = 3008,
     GATEWAY = 8000
 }

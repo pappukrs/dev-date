@@ -3,11 +3,12 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
+import { ServicePorts } from '@dev-date/common';
 
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3003;
+const port = process.env.PORT || ServicePorts.MATCHING;
 const prisma = new PrismaClient();
 const PROFILE_SERVICE_URL = process.env.PROFILE_SERVICE_URL || 'http://localhost:3002';
 
@@ -76,8 +77,8 @@ app.get('/matches/potential', async (req, res) => {
 
         // fetch all profiles from profile-service
         // In a real app, this would be paginated and filtered heavily
-        const response = await axios.get(`${PROFILE_SERVICE_URL}/profiles`);
-        const allProfiles: any[] = response.data; // Type assertion
+        const response = await axios.get(`${PROFILE_SERVICE_URL}/api/v1/profile`);
+        const allProfiles: any[] = response.data.data; // Unwrap { success, data } wrapper
 
         // Filter out users already swiped by this user
         const swipes = await prisma.swipe.findMany({
@@ -85,7 +86,7 @@ app.get('/matches/potential', async (req, res) => {
             select: { swipeeId: true }
         });
 
-        const swipedIds = new Set(swipes.map(s => s.swipeeId));
+        const swipedIds = new Set(swipes.map((s: { swipeeId: string }) => s.swipeeId));
         swipedIds.add(userId as string); // Exclude self
 
         const potentialMatches = allProfiles.filter(p => !swipedIds.has(p.githubId));

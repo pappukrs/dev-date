@@ -1,17 +1,29 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Heart, Trophy, Code2 } from "lucide-react";
 import MatchSwipe from "../components/MatchSwipe";
 import DatingToggle from "../components/DatingToggle";
+import ReputationBadge from "../components/ReputationBadge";
+import ProjectMarketplace from "../components/ProjectMarketplace";
+import PairProgramming from "../components/PairProgramming";
+import Header from "../components/Header";
+import Hero from "../components/Hero";
+import FloatingDock from "../components/FloatingDock";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+type Tab = 'dashboard' | 'dating' | 'reputation' | 'marketplace' | 'pairing';
 
 export default function Home() {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [datingMode, setDatingMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Check for token in URL (from auth callback)
+    setMounted(true);
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const urlToken = urlParams.get('token');
@@ -33,7 +45,7 @@ export default function Home() {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch('http://localhost:8000/auth/me', {
+      const res = await fetch(`${API_BASE}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -49,86 +61,121 @@ export default function Home() {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8000/profile/sync/${user.username}`, {
+      const res = await fetch(`${API_BASE}/profile/sync/${user.username}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
       });
       const data = await res.json();
       alert(`Profile Synced! Dev Score: ${data.data.devScore}`);
-      fetchUser(); // Refresh user data
+      fetchUser();
     } catch (err) {
+      console.error(err);
       alert('Failed to sync');
     } finally {
       setLoading(false);
     }
   };
 
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'dating':
+        return <MatchSwipe currentUser={user} />;
+      case 'reputation':
+        return <ReputationBadge currentUser={user} />;
+      case 'marketplace':
+        return <ProjectMarketplace currentUser={user} />;
+      case 'pairing':
+        return <PairProgramming currentUser={user} />;
+      default:
+        // Dashboard
+        return (
+          <div className="w-full max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Profile Card */}
+              <div className="bg-gray-800/50 backdrop-blur-xl p-8 rounded-3xl border border-white/10 relative overflow-hidden group hover:border-purple-500/30 transition-all duration-500">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-[50px] -z-10 group-hover:bg-purple-500/30 transition-all"></div>
+
+                <div className="flex items-center gap-6 mb-8">
+                  <div className="relative">
+                    <img src={user.avatarUrl} alt={user.username} className="w-24 h-24 rounded-2xl border-2 border-white/10 shadow-2xl" />
+                    <div className="absolute -bottom-2 -right-2 bg-gray-900 px-3 py-1 rounded-full border border-gray-700 text-xs font-bold text-white">
+                      Lvl {user.devScore ? Math.floor(user.devScore / 100) + 1 : 1}
+                    </div>
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold text-white mb-1">{user.displayName}</h2>
+                    <p className="text-purple-400 font-mono">@{user.username}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center bg-black/40 p-5 rounded-2xl border border-white/5">
+                    <span className="text-gray-400">Dev Score</span>
+                    <span className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-600">{user.devScore || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-black/40 p-5 rounded-2xl border border-white/5">
+                    <span className="text-gray-400">Experience</span>
+                    <span className="text-xl font-bold text-blue-400">{user.experienceLevel || 'Junior'}</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={syncProfile}
+                  disabled={loading}
+                  className="w-full mt-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-white shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  {loading ? 'Resyncing with GitHub...' : 'Sync GitHub Stats'}
+                </button>
+              </div>
+
+              {/* Quick Actions / Stats */}
+              <div className="space-y-6">
+                <div className="bg-gradient-to-br from-pink-500/10 to-rose-500/10 p-6 rounded-3xl border border-pink-500/20 hover:border-pink-500/40 transition cursor-pointer group" onClick={() => setActiveTab('dating')}>
+                  <div className="mb-4 w-12 h-12 rounded-2xl bg-pink-500/20 flex items-center justify-center group-hover:scale-110 transition">
+                    <Heart className="w-6 h-6 text-pink-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Find a Match</h3>
+                  <p className="text-gray-400 text-sm mt-1">Swipe through developer profiles</p>
+                </div>
+                <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-6 rounded-3xl border border-amber-500/20 hover:border-amber-500/40 transition cursor-pointer group" onClick={() => setActiveTab('reputation')}>
+                  <div className="mb-4 w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center group-hover:scale-110 transition">
+                    <Trophy className="w-6 h-6 text-amber-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Leaderboard</h3>
+                  <p className="text-gray-400 text-sm mt-1">Check your ranking</p>
+                </div>
+                <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 p-6 rounded-3xl border border-cyan-500/20 hover:border-cyan-500/40 transition cursor-pointer group" onClick={() => setActiveTab('pairing')}>
+                  <div className="mb-4 w-12 h-12 rounded-2xl bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition">
+                    <Code2 className="w-6 h-6 text-cyan-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Pair Program</h3>
+                  <p className="text-gray-400 text-sm mt-1">Join a live coding room</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  if (!mounted) return null; // Avoid hydration mismatch
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24 bg-gray-900 text-white">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex mb-10">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Dev-Date &nbsp;
-          <code className="font-mono font-bold">Phase 2</code>
-        </p>
+    <main className="min-h-screen bg-[#050505] text-white selection:bg-purple-500/30">
+      <Header user={user} />
 
-        {user && (
-          <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-            <DatingToggle enabled={datingMode} onToggle={setDatingMode} />
-          </div>
-        )}
-      </div>
-
-      <div className="relative flex place-items-center flex-col gap-8 w-full">
+      <div className="pt-24 pb-32 px-4 md:px-8 max-w-7xl mx-auto min-h-screen flex flex-col items-center justify-center">
         {!user ? (
-          <>
-            <h1 className="text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
-              Dev-Date
-            </h1>
-            <p className="text-xl text-gray-400">Where developers connect &lt;3</p>
-            <a
-              href="http://localhost:8000/auth/github"
-              className="px-8 py-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-bold border border-gray-700 transition flex items-center gap-3"
-            >
-              Login with GitHub
-            </a>
-          </>
-        ) : datingMode ? (
-          <MatchSwipe currentUser={user} />
+          <Hero />
         ) : (
-          <div className="bg-gray-800 p-8 rounded-xl border border-gray-700 w-full max-w-md">
-            <div className="flex items-center gap-4 mb-6">
-              <img src={user.avatarUrl} alt={user.username} className="w-16 h-16 rounded-full border-2 border-purple-500" />
-              <div>
-                <h2 className="text-2xl font-bold">{user.displayName}</h2>
-                <p className="text-gray-400">@{user.username}</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex justify-between items-center bg-gray-900 p-4 rounded-lg">
-                <span>Dev Score</span>
-                <span className="text-2xl font-bold text-green-400">{user.devScore || '?'}</span>
-              </div>
-              <div className="flex justify-between items-center bg-gray-900 p-4 rounded-lg">
-                <span>Level</span>
-                <span className="text-xl text-blue-400">{user.experienceLevel}</span>
-              </div>
-
-              <button
-                onClick={syncProfile}
-                disabled={loading}
-                className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold transition disabled:opacity-50"
-              >
-                {loading ? 'Analyzing GitHub...' : 'Recalculate Score'}
-              </button>
-            </div>
+          <div className="w-full flex justify-center animate-in fade-in duration-700">
+            {renderTabContent()}
           </div>
         )}
       </div>
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-      </div>
+      {user && <FloatingDock activeTab={activeTab} onTabChange={setActiveTab} />}
     </main>
   );
 }

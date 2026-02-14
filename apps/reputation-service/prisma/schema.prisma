@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/reputation-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ReputationEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String   // HELPING, BUG_FIX, CONTRIBUTION, MENTORING, CHALLENGE_COMPLETED, PROJECT_CREATED, COLLABORATION
+  points    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("reputation_events")
+}
+
+model UserReputation {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  totalPoints Int      @default(0)
+  level       String   @default("Junior") // Junior, Senior, Architect, Legend
+  badges      String[]
+  updatedAt   DateTime @updatedAt
+
+  @@map("user_reputations")
+}

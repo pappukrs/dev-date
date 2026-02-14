@@ -71,7 +71,7 @@ router.get('/github/callback',
 
         // Redirect to frontend with token
         // In production, better to use a secure cookie or postMessage
-        res.redirect(`http://localhost:3000/auth/callback?token=${token}`);
+        res.redirect(`http://localhost:3000/?token=${token}`);
     }
 );
 

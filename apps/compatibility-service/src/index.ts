@@ -1,13 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { User } from '@dev-date/common';
+import { User, ServicePorts } from '@dev-date/common';
 import { CompatibilityService } from './services/compatibility.service';
 
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3004;
+const port = process.env.PORT || ServicePorts.COMPATIBILITY;
 
 app.use(cors());
 app.use(express.json());
