@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # Infrastructure
   postgres:
     image: postgres:15-alpine
     container_name: dev-date-db
@@ -12,6 +13,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devuser -d devdate_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -25,6 +31,110 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  # Backend Services
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: dev-date-gateway
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - AUTH_URL=http://auth-service:3001
+      - PROFILE_URL=http://profile-service:3002
+      - CHAT_URL=http://chat-service:3003
+      - MATCHING_URL=http://matching-service:3004
+      - COMPATIBILITY_URL=http://compatibility-service:3005
+    depends_on:
+      - auth-service
+      - profile-service
+      - chat-service
+      - matching-service
+      - compatibility-service
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: apps/auth-service/Dockerfile
+    container_name: dev-date-auth
+    restart: always
+    environment:
+      - PORT=3001
+      - DB_HOST=postgres
+      - DB_USER=devuser
+      - DB_PASSWORD=devpassword
+      - DB_NAME=devdate_db
+      - JWT_SECRET=dev_secret_key
+      - GITHUB_CALLBACK_URL=http://localhost:8000/auth/github/callback
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  profile-service:
+    build:
+      context: .
+      dockerfile: apps/profile-service/Dockerfile
+    container_name: dev-date-profile
+    restart: always
+    environment:
+      - PORT=3002
+      - DB_HOST=postgres
+      - DATABASE_URL=postgresql://devuser:devpassword@postgres:5432/devdate_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  chat-service:
+    build:
+      context: .
+      dockerfile: apps/chat-service/Dockerfile
+    container_name: dev-date-chat
+    restart: always
+    environment:
+      - PORT=3003
+    depends_on:
+      - redis
+
+  matching-service:
+    build:
+      context: .
+      dockerfile: apps/matching-service/Dockerfile
+    container_name: dev-date-matching
+    restart: always
+    environment:
+      - PORT=3004
+      - DATABASE_URL=postgresql://devuser:devpassword@postgres:5432/devdate_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  compatibility-service:
+    build:
+      context: .
+      dockerfile: apps/compatibility-service/Dockerfile
+    container_name: dev-date-compatibility
+    restart: always
+    environment:
+      - PORT=3005
+    depends_on:
+      - redis
+
+  # Frontend
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: dev-date-web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - api-gateway
 
 volumes:
   postgres_data:

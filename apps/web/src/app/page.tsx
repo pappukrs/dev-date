@@ -33,7 +33,7 @@ export default function Home() {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch('http://localhost:3000/auth/me', {
+      const res = await fetch('http://localhost:8000/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -49,7 +49,7 @@ export default function Home() {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/profile/sync/${user.username}`, {
+      const res = await fetch(`http://localhost:8000/profile/sync/${user.username}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
@@ -87,7 +87,7 @@ export default function Home() {
             </h1>
             <p className="text-xl text-gray-400">Where developers connect &lt;3</p>
             <a
-              href="http://localhost:3000/auth/github"
+              href="http://localhost:8000/auth/github"
               className="px-8 py-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-bold border border-gray-700 transition flex items-center gap-3"
             >
               Login with GitHub
