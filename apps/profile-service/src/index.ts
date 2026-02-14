@@ -1,15 +1,116 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { ServicePorts } from '@dev-date/common';
+import { ServicePorts, API_PREFIX } from '@dev-date/common';
+import { PrismaClient } from '@prisma/client';
+import { GitHubService } from './services/github.service';
+import { ScoringService } from './services/scoring.service';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || ServicePorts.PROFILE;
+const prisma = new PrismaClient();
 
 app.use(cors());
 app.use(express.json());
+
+const router = express.Router();
+
+router.post('/sync/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+        const { token } = req.body; // Optional GitHub token for higher rate limits
+
+        console.log(`Syncing profile for ${username}...`);
+
+        // 1. Fetch Data
+        const data = await GitHubService.getUserData(username, token);
+
+        // 2. Calculate Stats
+        const score = ScoringService.calculateScore(data);
+        const level = ScoringService.determineExperienceLevel(score);
+        const techStack = GitHubService.calculateLanguages(data.repos);
+
+        // 3. Save to DB
+        const user = await prisma.user.upsert({
+            where: { githubId: data.profile.id.toString() },
+            update: {
+                username: data.profile.login,
+                displayName: data.profile.name || data.profile.login,
+                avatarUrl: data.profile.avatar_url,
+                bio: data.profile.bio,
+                techStack,
+                devScore: score,
+                experienceLevel: level
+            },
+            create: {
+                id: data.profile.id.toString(),
+                githubId: data.profile.id.toString(),
+                username: data.profile.login,
+                displayName: data.profile.name || data.profile.login,
+                avatarUrl: data.profile.avatar_url,
+                bio: data.profile.bio,
+                techStack,
+                devScore: score,
+                experienceLevel: level
+            }
+        });
+
+        res.json({
+            success: true,
+            data: user
+        });
+    } catch (error: any) {
+        console.error('Error syncing profile:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+router.get('/', async (req, res) => {
+    try {
+        const { experienceLevel } = req.query;
+        const where: any = {};
+
+        if (experienceLevel) {
+            where.experienceLevel = experienceLevel as string;
+        }
+
+        const users = await prisma.user.findMany({
+            where
+        });
+
+        res.json({
+            success: true,
+            data: users
+        });
+    } catch (error: any) {
+        console.error('Error fetching profiles:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+router.get('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await prisma.user.findUnique({
+            where: { id }
+        });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        res.json({
+            success: true,
+            data: user
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.use(`${API_PREFIX}/profile`, router);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'Profile service is healthy' });
